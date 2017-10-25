@@ -36,10 +36,52 @@
 # не забываем организовывать собственный код в функции
 
 import os
+import copy
+import locale
+import chardet
 
 migrations = 'Migrations'
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == '__main__':
     # ваша логика
+    def all_list(): # полный список файлов
+        migrations_dir = os.path.join(current_dir, migrations)
+        os.chdir(migrations_dir)
+        file_list = os.listdir(path=".")
+        return file_list
+    
+    def sql_list(all_list): # функция для отбора sql-файлов
+        sql_file_list = list() # пустой список sql-файлов
+        for i in all_list:
+            if (i[-3] + i[-2] + i[-1]) == 'sql':
+                sql_file_list.append(i)
+        return sql_file_list
+    
+    def search_string(sql_list):
+        search_file = list() # пустой список файлов для формирования сужающегося списка
+        file_list = sql_list
+        while True: #бесконечный цикл
+            search = input('Введите строку: ') # ввод строки для поиска
+            search_file.clear()
+            for i in file_list: #открываем поочередно каждый файл, раскодируем, ищем в нем введенную строку
+                with open(i, 'rb') as f:
+                    data = f.read()
+                    result = chardet.detect(data)
+                with open(i) as f:
+                    for line in f:
+                        line = line.encode(locale.getpreferredencoding())
+                        if result['encoding'] == None: # если не удалось раскодировать, то пропускаем
+                            break
+                        line = line.decode(result['encoding'])
+                        line_list = line.split(' ')
+                        if search in line_list:
+                            search_file.append(i) #если нашли, то этот файл добавляем в новый список файлов, перестаем искать в этом файле
+                            print(i)
+                            break
+            print('Всего: {}'.format(len(search_file)))
+            file_list = copy.deepcopy(search_file) 
+    
+    search_string(sql_list(all_list()))
+            
     pass
