@@ -65,15 +65,16 @@ if __name__ == '__main__':
             search = input('Введите строку: ') # ввод строки для поиска
             search_file.clear()
             for i in file_list: #открываем поочередно каждый файл, раскодируем, ищем в нем введенную строку
-                with open(i, 'rb') as f:
+                with open(os.path.join(current_dir, migrations, i), 'rb') as f:
                     data = f.read()
                     result = chardet.detect(data)
                 with open(i) as f:
                     for line in f:
-                        line = line.encode(locale.getpreferredencoding())
-                        if result['encoding'] == None: # если не удалось раскодировать, то пропускаем
-                            break
-                        line = line.decode(result['encoding'])
+                        try:
+                            line = line.encode(locale.getpreferredencoding())
+                            line = line.decode(result['encoding'])
+                        except Exception:
+                            print('Ошибка. Строка пропущена')
                         line_list = line.split(' ')
                         if search in line_list:
                             search_file.append(i) #если нашли, то этот файл добавляем в новый список файлов, перестаем искать в этом файле
