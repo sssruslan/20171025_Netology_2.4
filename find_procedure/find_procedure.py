@@ -39,6 +39,7 @@ import os
 import copy
 import locale
 import chardet
+import re
 
 migrations = 'Migrations'
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     def sql_list(all_list): # функция для отбора sql-файлов
         sql_file_list = list() # пустой список sql-файлов
         for i in all_list:
-            if (i[-3] + i[-2] + i[-1]) == 'sql':
+            if i.endswith('.sql'):
                 sql_file_list.append(i)
         return sql_file_list
     
@@ -62,22 +63,25 @@ if __name__ == '__main__':
         search_file = list() # пустой список файлов для формирования сужающегося списка
         file_list = sql_list
         while True: #бесконечный цикл
-            search = input('Введите строку: ') # ввод строки для поиска
+            search = input('Введите строку (регистр не важен): ') # ввод строки для поиска
             search_file.clear()
+            search = search.lower()
             for i in file_list: #открываем поочередно каждый файл, раскодируем, ищем в нем введенную строку
                 with open(os.path.join(current_dir, migrations, i), 'rb') as f:
                     data = f.read()
                     result = chardet.detect(data)
+                    data = data.lower()
                 with open(i) as f:
                     for line in f:
+                        #signal = 0 # сигнал для дострочного выхода из цикла 
                         try:
                             line = line.encode(locale.getpreferredencoding())
                             line = line.decode(result['encoding'])
                         except Exception:
                             print('Ошибка. Строка пропущена')
-                        line_list = line.split(' ')
-                        if search in line_list:
-                            search_file.append(i) #если нашли, то этот файл добавляем в новый список файлов, перестаем искать в этом файле
+                        line = line.lower()
+                        if re.findall(search, line) != []:
+                            search_file.append(i)
                             print(i)
                             break
             print('Всего: {}'.format(len(search_file)))
