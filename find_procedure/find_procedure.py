@@ -36,57 +36,49 @@
 # не забываем организовывать собственный код в функции
 
 import os
-import copy
-import locale
 import chardet
-import re
 
 migrations = 'Migrations'
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
+def all_list(): 
+    'Формируем полный список файлов'
+    migrations_dir = os.path.join(current_dir, migrations)
+    file_list = os.listdir(path=migrations_dir)
+    return file_list
+    
+def sql_list(all_list): 
+    'Функция для отбора sql-файлов'
+    sql_file_list = list() # пустой список sql-файлов
+    for i in all_list:
+        if i.endswith('.sql'):
+            sql_file_list.append(i)
+    return sql_file_list
+
+def decode_files(file_name):
+    'Раскодирует файл, возвращает содержимое в читаемом виде'
+    with open(os.path.join(current_dir, migrations, file_name), 'rb') as f:
+        data = f.read()
+        result = chardet.detect(data)
+        data = data.decode(result['encoding'])
+        data = data.lower()
+    return data
+    
+def search_string(sql_list):
+    'Главная функция: ищет запрашиваемую строку в файлах, список при каждом запросе сужается'
+    file_list = sql_list
+    while True: 
+        search = input('Введите строку (регистр не важен): ') 
+        search = search.lower()
+        containing_files = list() # пустой список файлов для формирования сужающегося списка
+        for file_name in file_list: 
+            if search in decode_files(file_name):
+                containing_files.append(file_name)
+                print(file_name)
+        print('Всего: {}'.format(len(containing_files)))
+        file_list = containing_files
+
 if __name__ == '__main__':
-    # ваша логика
-    def all_list(): # полный список файлов
-        migrations_dir = os.path.join(current_dir, migrations)
-        os.chdir(migrations_dir)
-        file_list = os.listdir(path=".")
-        return file_list
-    
-    def sql_list(all_list): # функция для отбора sql-файлов
-        sql_file_list = list() # пустой список sql-файлов
-        for i in all_list:
-            if i.endswith('.sql'):
-                sql_file_list.append(i)
-        return sql_file_list
-    
-    def search_string(sql_list):
-        search_file = list() # пустой список файлов для формирования сужающегося списка
-        file_list = sql_list
-        while True: #бесконечный цикл
-            search = input('Введите строку (регистр не важен): ') # ввод строки для поиска
-            search_file.clear()
-            search = search.lower()
-            for i in file_list: #открываем поочередно каждый файл, раскодируем, ищем в нем введенную строку
-                with open(os.path.join(current_dir, migrations, i), 'rb') as f:
-                    data = f.read()
-                    result = chardet.detect(data)
-                    data = data.lower()
-                with open(i) as f:
-                    for line in f:
-                        #signal = 0 # сигнал для дострочного выхода из цикла 
-                        try:
-                            line = line.encode(locale.getpreferredencoding())
-                            line = line.decode(result['encoding'])
-                        except Exception:
-                            print('Ошибка. Строка пропущена')
-                        line = line.lower()
-                        if re.findall(search, line) != []:
-                            search_file.append(i)
-                            print(i)
-                            break
-            print('Всего: {}'.format(len(search_file)))
-            file_list = copy.deepcopy(search_file) 
-    
     search_string(sql_list(all_list()))
             
     pass
